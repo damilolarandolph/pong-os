@@ -3,12 +3,14 @@ SECTIONS
 
 .bootloader 0x7c00 : {
     KEEP( *(.bootloader))
-    }
+}
 
-.text : { KEEP(*(.text)) }
+.text . : {
+     KEEP( *(.text))
+}
 
 
-.data : { *(.data) }
+.data : { KEEP(*(.data)) }
 
 .bss : { *(.bss) }
 }
