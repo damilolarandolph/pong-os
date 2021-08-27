@@ -13,9 +13,9 @@ pub fn build(b: *std.build.Builder) void {
     // Standard release options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
-    const nasmArgs = [_][]const u8{ "nasm", "./boot/bootloader.asm", "-f elf", "-o ./bootloader.o" };
+    const nasmArgs = [_][]const u8{ "nasm", "./boot/bootloader.asm", "-i ./boot/", "-f elf", "-o ./bootloader.o" };
     const nasmStep = b.addSystemCommand(&nasmArgs);
-    const kernelObj = b.addExecutable("kernel", "src/main.zig");
+    const kernelObj = b.addExecutable("kernel", "./src/main.zig");
     kernelObj.step.dependOn(&nasmStep.step);
     kernelObj.setTarget(target);
     kernelObj.addObjectFile("./bootloader.o");
