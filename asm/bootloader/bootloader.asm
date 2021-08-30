@@ -5,16 +5,38 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 [bits 16]
-section .bootloader
 
+section .bootloader
+global _startt
+
+_startt:
 
 ; Setup stack
 mov bp, 0x9000
 mov sp, bp
-
-switch:
+    mov [BOOT_DRIVE], dl
     mov bx, hello_zig
     call print
+
+    ;Load kernel sector
+    pusha
+    mov dl, [BOOT_DRIVE]
+    mov bx, 0x1000      ; Where to place read sectors 
+    mov ah, 0x02        ; Select disk function
+    mov al, 0x20        ; How many sectors to read.
+    mov ch, 0x00        ; Cylinder 0
+    mov dh, 0x00        ; Head 0
+    mov cl, 0x02        ; Start reading from second sector, since first sector is the bootloader.
+    int 0x13
+    jc disk_error
+    cmp al, 0x20
+    jne disk_error2
+    popa
+
+    mov bx, DONE_PRINTING
+    call print
+
+    ;jmp $
 
     cli
     lgdt [gdt_descriptor]
@@ -26,6 +48,16 @@ switch:
     jmp CODE_SEG:init_pm    ; do a far jump to clear pipeline
 
 
+[bits 16]
+disk_error:
+    mov bx, DISK_ERROR
+    call print
+    jmp $
+
+disk_error2:
+    mov bx, DISK_READ_MISMATCH
+    call print
+    jmp $
 
 
 [bits 32]
@@ -44,10 +76,15 @@ init_pm:  ; do initializations for protected mode
    ; Health check
     mov ebx, PM_MSG
     call print_string_pm
+    jmp 0x1000              ; Hopefully call kernel
     jmp $
 
 
 PM_MSG db "Successfully in 32 bit mode !",0
+BOOT_DRIVE db 0
+DISK_ERROR db "There was a disk error !",0
+DISK_READ_MISMATCH db "Could not read all sectors !", 0
+DONE_PRINTING db "DONE PRINTING", 0
 
 
 %include 'print.asm'
