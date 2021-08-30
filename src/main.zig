@@ -1,5 +1,6 @@
-const std = @import("std");
+const video = @import("drivers/video.zig");
 
-pub fn main() anyerror!void {
-    std.log.info("All your codebase are belong to us.", .{});
+pub export fn main() void {
+    video.printChar('X');
+    while (true) {}
 }
