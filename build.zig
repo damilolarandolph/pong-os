@@ -12,18 +12,31 @@ pub fn build(b: *std.build.Builder) void {
 
     // Standard release options allow the person running `zig build` to select
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
-    const mode = b.standardReleaseOptions();
-    const nasmArgs = [_][]const u8{ "nasm", "./boot/bootloader.asm", "-i ./boot/", "-f elf", "-o ./bootloader.o" };
+
+    // Build asm files;
+    const nasmArgs = [_][]const u8{ "nasm", "./asm/bootloader/bootloader.asm", "-i ./asm/bootloader/", "-f elf", "-o ./bootloader.o" };
     const nasmStep = b.addSystemCommand(&nasmArgs);
+    const kernelAsmArgs = [_][]const u8{ "nasm", "./asm/kernel/kernel-jump.asm", "-f elf", "-o ./kernel-jump.o" };
+    const kernelAsmStep = b.addSystemCommand(&kernelAsmArgs);
+
+    // Build Zig Kernel
     const kernelObj = b.addExecutable("kernel", "./src/main.zig");
-    kernelObj.step.dependOn(&nasmStep.step);
     kernelObj.setTarget(target);
+
     kernelObj.addObjectFile("./bootloader.o");
-    kernelObj.setLinkerScriptPath("./boot/linker.ld");
-    kernelObj.setBuildMode(std.builtin.Mode.ReleaseFast);
+    kernelObj.addObjectFile("./kernel-jump.o");
+
+    kernelObj.setLinkerScriptPath("./asm/linker.ld");
+    kernelObj.setBuildMode(std.builtin.Mode.ReleaseSmall);
     kernelObj.installRaw("raw");
+
+    // Step up build commands/options
     const runCommand = b.addSystemCommand(&[_][]const u8{ "qemu-system-x86_64", "-drive", "file=./zig-out/bin/raw,format=raw" });
-    runCommand.step.dependOn(b.getInstallStep());
     const runOption = b.step("run", "run in qemu");
+
+    // Wire up dependencies
+    kernelObj.step.dependOn(&nasmStep.step);
+    kernelObj.step.dependOn(&kernelAsmStep.step);
+    runCommand.step.dependOn(b.getInstallStep());
     runOption.dependOn(&runCommand.step);
 }
