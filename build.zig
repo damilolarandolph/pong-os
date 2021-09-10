@@ -31,7 +31,7 @@ pub fn build(b: *std.build.Builder) void {
     kernelObj.installRaw("raw");
 
     // Step up build commands/options
-    const runCommand = b.addSystemCommand(&[_][]const u8{ "qemu-system-x86_64", "-drive", "file=./zig-out/bin/raw,format=raw" });
+    const runCommand = b.addSystemCommand(&[_][]const u8{ "qemu-system-x86_64", "-vga", "std", "-drive", "file=./zig-out/bin/raw,format=raw" });
     const runOption = b.step("run", "run in qemu");
 
     // Wire up dependencies
