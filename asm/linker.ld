@@ -13,7 +13,7 @@ SECTIONS
 . = 0x1000;
 .kernel : AT ( ADDR(.bootloader) + SIZEOF(.bootloader) )
     {
-         KEEP( *(.header));
+         KEEP( *(.header*));
          . = ALIGN(512);
          KEEP( *(.text*));
          KEEP( *(.data*));

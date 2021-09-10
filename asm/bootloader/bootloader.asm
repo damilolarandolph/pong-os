@@ -7,9 +7,7 @@
 [bits 16]
 
 section .bootloader
-global _startt
 
-_startt:
 
 ; Setup stack
 mov bp, 0x9000
@@ -33,8 +31,39 @@ mov sp, bp
     jne disk_error2
     popa
 
-    mov bx, DONE_PRINTING
+    ;Get vbe info
+    pusha 
+    mov ax, 0x4f01
+    mov cx, 0x0118
+    push es
+    mov di, 0x1000
+    int 0x10
+    pop es
+    cmp ax, 0x004f
+    je vbe_info_done
+    mov bx, VBE_ERROR
     call print
+    jmp $
+    vbe_info_done:
+    popa
+
+    ;Set VBE Mode
+    pusha 
+    mov ax, 0x4f02
+    mov bx, 0x4118
+    int 0x10
+    cmp ax, 0x004f
+    je vbe_set_done
+    mov bx, VBE_ERROR
+    call print
+    jmp $
+
+    vbe_set_done:
+    popa
+    
+
+    ; mov bx, DONE_PRINTING
+    ; call print
 
     ;jmp $
 
@@ -49,6 +78,7 @@ mov sp, bp
 
 
 [bits 16]
+
 disk_error:
     mov bx, DISK_ERROR
     call print
@@ -61,6 +91,7 @@ disk_error2:
 
 
 [bits 32]
+
 init_pm:  ; do initializations for protected mode
 
     mov ax, DATA_SEG
@@ -73,10 +104,8 @@ init_pm:  ; do initializations for protected mode
     mov ebp, 0x90000        ; update stack base
     mov esp, ebp
 
-   ; Health check
-    mov ebx, PM_MSG
-    call print_string_pm
-    jmp 0x1000              ; Hopefully call kernel
+  
+    call 0x1200              ; Hopefully call kernel
     jmp $
 
 
@@ -86,13 +115,13 @@ DISK_ERROR db "There was a disk error !",0
 DISK_READ_MISMATCH db "Could not read all sectors !", 0
 DONE_PRINTING db "DONE PRINTING", 0
 
+VBE_ERROR db "VBE ERROR OCCURED", 0
+
 
 %include 'print.asm'
 %include 'gdt.asm'
 %include 'print_pm.asm'
 
-[bits 32]
-[extern main]
 
 [bits 16]
 
